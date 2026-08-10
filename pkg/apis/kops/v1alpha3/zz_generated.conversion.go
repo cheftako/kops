@@ -2930,6 +2930,15 @@ func autoConvert_v1alpha3_ClusterSpec_To_kops_ClusterSpec(in *ClusterSpec, out *
 	} else {
 		out.KubeAPIServer = nil
 	}
+	if in.KubeAPIFrontend != nil {
+		in, out := &in.KubeAPIFrontend, &out.KubeAPIFrontend
+		*out = new(kops.KubeAPIServerConfig)
+		if err := Convert_v1alpha3_KubeAPIServerConfig_To_kops_KubeAPIServerConfig(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.KubeAPIFrontend = nil
+	}
 	if in.KubeControllerManager != nil {
 		in, out := &in.KubeControllerManager, &out.KubeControllerManager
 		*out = new(kops.KubeControllerManagerConfig)
@@ -3263,6 +3272,15 @@ func autoConvert_kops_ClusterSpec_To_v1alpha3_ClusterSpec(in *kops.ClusterSpec, 
 		}
 	} else {
 		out.KubeAPIServer = nil
+	}
+	if in.KubeAPIFrontend != nil {
+		in, out := &in.KubeAPIFrontend, &out.KubeAPIFrontend
+		*out = new(KubeAPIServerConfig)
+		if err := Convert_kops_KubeAPIServerConfig_To_v1alpha3_KubeAPIServerConfig(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.KubeAPIFrontend = nil
 	}
 	if in.KubeControllerManager != nil {
 		in, out := &in.KubeControllerManager, &out.KubeControllerManager

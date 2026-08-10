@@ -236,7 +236,7 @@ func (b *KubeAPIServerBuilder) Build(c *fi.NodeupModelBuilderContext) error {
 	}
 
 	{
-		pod, err := b.buildPod(ctx, &kubeAPIServer)
+		pod, err := b.buildPod(ctx, &kubeAPIServer, false)
 		if err != nil {
 			return fmt.Errorf("error building kube-apiserver manifest: %v", err)
 		}
@@ -268,6 +268,177 @@ func (b *KubeAPIServerBuilder) Build(c *fi.NodeupModelBuilderContext) error {
 		IfNotExists: true,
 	})
 
+	if err := b.configureFrontend(ctx, c); err != nil {
+		return nil
+	}
+
+	return nil
+}
+
+// TODO: @jpbetz helper for the KAS Frontend @cheftako
+func (b *KubeAPIServerBuilder) configureFrontend(ctx context.Context, c *fi.NodeupModelBuilderContext) error {
+	var kubeAPIFrontend kops.KubeAPIServerConfig
+	if b.NodeupConfig.APIServerConfig.KubeAPIServer != nil {
+		kubeAPIFrontend = *b.NodeupConfig.APIFrontendConfig.KubeAPIServer
+	}
+
+	pathSrvKAPI := filepath.Join(b.PathSrvKubernetes(), "kube-apiserver")
+	/*
+		b.configureOIDC(&kubeAPIFrontend)
+		if err := b.writeAuthenticationConfig(c, &kubeAPIFrontend); err != nil {
+			return err
+		}
+
+		if b.NodeupConfig.APIServerConfig.EncryptionConfigSecretHash != "" {
+			encryptionConfigPath := new(filepath.Join(pathSrvKAPI, "encryptionconfig.yaml"))
+
+			kubeAPIFrontend.EncryptionProviderConfig = encryptionConfigPath
+
+			key := "encryptionconfig"
+			encryptioncfg, err := b.SecretStore.Secret(key)
+			if err == nil {
+				contents := string(encryptioncfg.Data)
+				t := &nodetasks.File{
+					Path:     *encryptionConfigPath,
+					Contents: fi.NewStringResource(contents),
+					Mode:     new("600"),
+					Type:     nodetasks.FileType_File,
+				}
+				c.AddTask(t)
+			} else {
+				return fmt.Errorf("encryptionConfig enabled, but could not load encryptionconfig secret: %v", err)
+			}
+		}
+
+		kubeAPIFrontend.ServiceAccountKeyFile = append(kubeAPIFrontend.ServiceAccountKeyFile, filepath.Join(pathSrvKAPI, "service-account.pub"))
+		c.AddTask(&nodetasks.File{
+			Path:     filepath.Join(pathSrvKAPI, "service-account.pub"),
+			Contents: fi.NewStringResource(b.NodeupConfig.APIServerConfig.ServiceAccountPublicKeys),
+			Type:     nodetasks.FileType_File,
+			Mode:     s("0600"),
+		})
+
+		// Set the signing key if we're using Service Account Token VolumeProjection
+		if kubeAPIFrontend.ServiceAccountSigningKeyFile == nil {
+			s := filepath.Join(pathSrvKAPI, "service-account.key")
+			kubeAPIFrontend.ServiceAccountSigningKeyFile = &s
+			if err := b.BuildPrivateKeyTask(c, "service-account", pathSrvKAPI, "service-account", nil, nil); err != nil {
+				return err
+			}
+		}
+
+		{
+			c.AddTask(&nodetasks.File{
+				Path:     filepath.Join(pathSrvKAPI, "etcd-ca.crt"),
+				Contents: fi.NewStringResource(b.NodeupConfig.CAs["etcd-clients-ca"]),
+				Type:     nodetasks.FileType_File,
+				Mode:     new("0644"),
+			})
+			kubeAPIFrontend.EtcdCAFile = filepath.Join(pathSrvKAPI, "etcd-ca.crt")
+
+			issueCert := &nodetasks.IssueCert{
+				Name:      "etcd-client",
+				Signer:    "etcd-clients-ca",
+				KeypairID: b.NodeupConfig.KeypairIDs["etcd-clients-ca"],
+				Type:      "client",
+				Subject: nodetasks.PKIXName{
+					CommonName: "kube-apiserver",
+				},
+			}
+			c.AddTask(issueCert)
+			if err := issueCert.AddFileTasks(c, pathSrvKAPI, issueCert.Name, "", nil); err != nil {
+				return err
+			}
+		}
+		kubeAPIFrontend.EtcdCertFile = filepath.Join(pathSrvKAPI, "etcd-client.crt")
+		kubeAPIFrontend.EtcdKeyFile = filepath.Join(pathSrvKAPI, "etcd-client.key")
+
+		{
+			c.AddTask(&nodetasks.File{
+				Path:     filepath.Join(pathSrvKAPI, "apiserver-aggregator-ca.crt"),
+				Contents: fi.NewStringResource(b.NodeupConfig.CAs["apiserver-aggregator-ca"]),
+				Type:     nodetasks.FileType_File,
+				Mode:     new("0644"),
+			})
+			kubeAPIFrontend.RequestheaderClientCAFile = filepath.Join(pathSrvKAPI, "apiserver-aggregator-ca.crt")
+
+			issueCert := &nodetasks.IssueCert{
+				Name:      "apiserver-aggregator",
+				Signer:    "apiserver-aggregator-ca",
+				KeypairID: b.NodeupConfig.KeypairIDs["apiserver-aggregator-ca"],
+				Type:      "client",
+				// Must match RequestheaderAllowedNames
+				Subject: nodetasks.PKIXName{CommonName: "aggregator"},
+			}
+			c.AddTask(issueCert)
+			err := issueCert.AddFileTasks(c, pathSrvKAPI, "apiserver-aggregator", "", nil)
+			if err != nil {
+				return err
+			}
+			kubeAPIFrontend.ProxyClientCertFile = new(filepath.Join(pathSrvKAPI, "apiserver-aggregator.crt"))
+			kubeAPIFrontend.ProxyClientKeyFile = new(filepath.Join(pathSrvKAPI, "apiserver-aggregator.key"))
+		}
+
+		if err := b.writeServerCertificate(c, &kubeAPIFrontend); err != nil {
+			return err
+		}
+
+		if err := b.writeKubeletAPICertificate(c, &kubeAPIFrontend); err != nil {
+			return err
+		}
+
+		if err := b.writeStaticCredentials(c, &kubeAPIFrontend); err != nil {
+			return err
+		} */
+	{
+		kubeAPIFrontend.ServiceAccountKeyFile = append(kubeAPIFrontend.ServiceAccountKeyFile, filepath.Join(pathSrvKAPI, "service-account.pub"))
+		// Set the signing key if we're using Service Account Token VolumeProjection
+		if kubeAPIFrontend.ServiceAccountSigningKeyFile == nil {
+			s := filepath.Join(pathSrvKAPI, "service-account.key")
+			kubeAPIFrontend.ServiceAccountSigningKeyFile = &s
+		}
+		kubeAPIFrontend.EtcdCAFile = filepath.Join(pathSrvKAPI, "etcd-ca.crt")
+		kubeAPIFrontend.EtcdCertFile = filepath.Join(pathSrvKAPI, "etcd-client.crt")
+		kubeAPIFrontend.EtcdKeyFile = filepath.Join(pathSrvKAPI, "etcd-client.key")
+		// If clientCAFile is not specified, set it to the default value ${PathSrvKubernetes}/ca.crt
+		if kubeAPIFrontend.ClientCAFile == "" {
+			kubeAPIFrontend.ClientCAFile = filepath.Join(b.PathSrvKubernetes(), "ca.crt")
+		}
+		// @note we are making assumption were using the ones created by the pki model, not custom defined ones
+		kubeAPIFrontend.KubeletClientCertificate = filepath.Join(pathSrvKAPI, "kubelet-api.crt")
+		kubeAPIFrontend.KubeletClientKey = filepath.Join(pathSrvKAPI, "kubelet-api.key")
+		kubeAPIFrontend.ProxyClientCertFile = new(filepath.Join(pathSrvKAPI, "apiserver-aggregator.crt"))
+		kubeAPIFrontend.ProxyClientKeyFile = new(filepath.Join(pathSrvKAPI, "apiserver-aggregator.key"))
+		kubeAPIFrontend.RequestheaderClientCAFile = filepath.Join(pathSrvKAPI, "apiserver-aggregator-ca.crt")
+		kubeAPIFrontend.TLSCertFile = filepath.Join(pathSrvKAPI, "server.crt")
+		kubeAPIFrontend.TLSPrivateKeyFile = filepath.Join(pathSrvKAPI, "server.key")
+	}
+
+	{
+		pod, err := b.buildPod(ctx, &kubeAPIFrontend, true)
+		if err != nil {
+			return fmt.Errorf("error building kube-frontend manifest: %v", err)
+		}
+
+		manifest, err := k8scodecs.ToVersionedYaml(pod)
+		if err != nil {
+			return fmt.Errorf("error marshaling manifest to yaml: %v", err)
+		}
+
+		c.AddTask(&nodetasks.File{
+			Path:     "/etc/kubernetes/manifests/kube-apifrontend.manifest",
+			Contents: fi.NewBytesResource(manifest),
+			Type:     nodetasks.FileType_File,
+		})
+
+		c.AddTask(&nodetasks.File{
+			Path:        "/var/log/kube-apifrontend.log",
+			Contents:    fi.NewStringResource(""),
+			Type:        nodetasks.FileType_File,
+			Mode:        s("0400"),
+			IfNotExists: true,
+		})
+	}
 	return nil
 }
 
@@ -587,7 +758,7 @@ func (b *KubeAPIServerBuilder) allAuthTokens() (map[string]string, error) {
 }
 
 // buildPod is responsible for generating the kube-apiserver pod and thus manifest file
-func (b *KubeAPIServerBuilder) buildPod(ctx context.Context, kubeAPIServer *kops.KubeAPIServerConfig) (*v1.Pod, error) {
+func (b *KubeAPIServerBuilder) buildPod(ctx context.Context, kubeAPIServer *kops.KubeAPIServerConfig, isFrontend bool) (*v1.Pod, error) {
 	// we need to replace 127.0.0.1 for etcd urls with the dns names in case this apiserver is not
 	// running on master nodes
 	if !b.IsMaster {
@@ -636,7 +807,7 @@ func (b *KubeAPIServerBuilder) buildPod(ctx context.Context, kubeAPIServer *kops
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        "kube-apiserver",
 			Namespace:   "kube-system",
-			Annotations: b.buildAnnotations(),
+			Annotations: b.buildAnnotations(isFrontend),
 			Labels: map[string]string{
 				"k8s-app": "kube-apiserver",
 			},
@@ -644,6 +815,9 @@ func (b *KubeAPIServerBuilder) buildPod(ctx context.Context, kubeAPIServer *kops
 		Spec: v1.PodSpec{
 			HostNetwork: true,
 		},
+	}
+	if isFrontend {
+		pod.ObjectMeta.Name = "kube-apifrontend"
 	}
 
 	useHealthcheckProxy := b.findHealthcheckManifest() != nil
@@ -752,6 +926,9 @@ func (b *KubeAPIServerBuilder) buildPod(ctx context.Context, kubeAPIServer *kops
 			Limits:   resourceLimits,
 		},
 	}
+	if isFrontend {
+		container.Name = "kube-apifrontend"
+	}
 
 	if insecurePort != 0 {
 		container.Ports = append(container.Ports, v1.ContainerPort{
@@ -762,10 +939,24 @@ func (b *KubeAPIServerBuilder) buildPod(ctx context.Context, kubeAPIServer *kops
 	}
 
 	// Log both to docker and to the logfile
-	kubemanifest.AddHostPathMapping(pod, container, "logfile", "/var/log/kube-apiserver.log", kubemanifest.WithReadWrite())
-	// We use lighter containers that don't include shells
-	// But they have richer logging support via klog
-	{
+	if isFrontend {
+		kubemanifest.AddHostPathMapping(pod, container, "logfile", "/var/log/kube-apifrontend.log", kubemanifest.WithReadWrite())
+		// We use lighter containers that don't include shells
+		// But they have richer logging support via klog
+		container.Command = []string{"/go-runner"}
+		container.Args = []string{
+			"--log-file=/var/log/kube-apifrontend.log",
+			"--also-stdout",
+			"/usr/local/bin/kube-apiserver",
+		}
+		container.Args = append(container.Args, sortedStrings(flags)...)
+		for _, issuer := range kubeAPIServer.AdditionalServiceAccountIssuers {
+			container.Args = append(container.Args, "--service-account-issuer="+issuer)
+		}
+	} else {
+		kubemanifest.AddHostPathMapping(pod, container, "logfile", "/var/log/kube-apiserver.log", kubemanifest.WithReadWrite())
+		// We use lighter containers that don't include shells
+		// But they have richer logging support via klog
 		container.Command = []string{"/go-runner"}
 		container.Args = []string{
 			"--log-file=/var/log/kube-apiserver.log",
@@ -833,9 +1024,13 @@ func (b *KubeAPIServerBuilder) buildPod(ctx context.Context, kubeAPIServer *kops
 	return pod, nil
 }
 
-func (b *KubeAPIServerBuilder) buildAnnotations() map[string]string {
+func (b *KubeAPIServerBuilder) buildAnnotations(isFrontend bool) map[string]string {
 	annotations := make(map[string]string)
-	annotations["kubectl.kubernetes.io/default-container"] = "kube-apiserver"
+	if isFrontend {
+		annotations["kubectl.kubernetes.io/default-container"] = "kube-apifrontend"
+	} else {
+		annotations["kubectl.kubernetes.io/default-container"] = "kube-apiserver"
+	}
 
 	if b.NodeupConfig.UsesNoneDNS {
 		return annotations

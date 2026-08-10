@@ -39,11 +39,19 @@ func (b *DiscoveryOptionsBuilder) BuildOptions(o *kops.Cluster) error {
 	if clusterSpec.KubeAPIServer == nil {
 		clusterSpec.KubeAPIServer = &kops.KubeAPIServerConfig{}
 	}
-
 	kubeAPIServer := clusterSpec.KubeAPIServer
+
+	if clusterSpec.KubeAPIFrontend == nil {
+		clusterSpec.KubeAPIFrontend = &kops.KubeAPIServerConfig{}
+	}
+	KubeAPIFrontend := clusterSpec.KubeAPIFrontend
 
 	if len(kubeAPIServer.APIAudiences) == 0 {
 		kubeAPIServer.APIAudiences = []string{"kubernetes.svc.default"}
+	}
+
+	if len(KubeAPIFrontend.APIAudiences) == 0 {
+		KubeAPIFrontend.APIAudiences = []string{"kubernetes.svc.default"}
 	}
 
 	if kubeAPIServer.ServiceAccountIssuer == nil {
@@ -90,8 +98,10 @@ func (b *DiscoveryOptionsBuilder) BuildOptions(o *kops.Cluster) error {
 			}
 		}
 		kubeAPIServer.ServiceAccountIssuer = &serviceAccountIssuer
+		KubeAPIFrontend.ServiceAccountIssuer = &serviceAccountIssuer
 	}
 	kubeAPIServer.ServiceAccountJWKSURI = new(*kubeAPIServer.ServiceAccountIssuer + "/openid/v1/jwks")
+	KubeAPIFrontend.ServiceAccountJWKSURI = new(*kubeAPIServer.ServiceAccountIssuer + "/openid/v1/jwks")
 	// We set apiserver ServiceAccountKey and ServiceAccountSigningKeyFile in nodeup
 
 	return nil

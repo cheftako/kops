@@ -49,6 +49,19 @@ func SetObjectDefaults_Cluster(in *Cluster) {
 			}
 		}
 	}
+	if in.Spec.KubeAPIFrontend != nil {
+		for i := range in.Spec.KubeAPIFrontend.Env {
+			a := &in.Spec.KubeAPIFrontend.Env[i]
+			if a.ValueFrom != nil {
+				if a.ValueFrom.FileKeyRef != nil {
+					if a.ValueFrom.FileKeyRef.Optional == nil {
+						var ptrVar1 bool = false
+						a.ValueFrom.FileKeyRef.Optional = &ptrVar1
+					}
+				}
+			}
+		}
+	}
 }
 
 func SetObjectDefaults_ClusterList(in *ClusterList) {

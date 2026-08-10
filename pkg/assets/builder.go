@@ -285,6 +285,14 @@ func (a *AssetBuilder) RemapImage(image string) string {
 		}
 	}
 
+	// TODO: @jpbetz we will need to fix this once we have a kas-fe to test with.
+	if strings.HasPrefix(image, "registry.k8s.io/kops/kube-apiserver-frontend:") {
+		override := os.Getenv("KUBE_APISERVER_FRONTEND_IMAGE")
+		if override != "" {
+			image = override
+		}
+	}
+
 	normalized := NormalizeImage(a, image)
 	image = normalized
 	asset.DownloadLocation = normalized

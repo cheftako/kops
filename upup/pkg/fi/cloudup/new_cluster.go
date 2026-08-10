@@ -283,6 +283,9 @@ func NewCluster(opt *NewClusterOptions, clientset simple.Clientset) (*NewCluster
 		cluster.Spec.KubeAPIServer = &api.KubeAPIServerConfig{
 			FeatureGates: make(map[string]string),
 		}
+		cluster.Spec.KubeAPIFrontend = &api.KubeAPIServerConfig{
+			FeatureGates: make(map[string]string),
+		}
 		cluster.Spec.KubeControllerManager = &api.KubeControllerManagerConfig{
 			FeatureGates: make(map[string]string),
 		}
@@ -301,6 +304,7 @@ func NewCluster(opt *NewClusterOptions, clientset simple.Clientset) (*NewCluster
 			value := strconv.FormatBool(enabled)
 			cluster.Spec.Kubelet.FeatureGates[featureGate] = value
 			cluster.Spec.KubeAPIServer.FeatureGates[featureGate] = value
+			cluster.Spec.KubeAPIFrontend.FeatureGates[featureGate] = value
 			cluster.Spec.KubeControllerManager.FeatureGates[featureGate] = value
 			cluster.Spec.KubeProxy.FeatureGates[featureGate] = value
 			cluster.Spec.KubeScheduler.FeatureGates[featureGate] = value

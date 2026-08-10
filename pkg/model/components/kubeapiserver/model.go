@@ -75,7 +75,7 @@ func (b *KubeApiserverBuilder) buildManifest() (*corev1.Pod, error) {
 	return b.buildHealthcheckSidecar()
 }
 
-const defaultManifest = `
+const defaultKASManifest = `
 apiVersion: v1
 kind: Pod
 spec:
@@ -114,7 +114,7 @@ spec:
 func (b *KubeApiserverBuilder) buildHealthcheckSidecar() (*corev1.Pod, error) {
 	// TODO: pull from bundle
 	bundle := "(embedded kube-apiserver-healthcheck manifest)"
-	manifest := []byte(fmt.Sprintf(defaultManifest, kopsversion.KopsVersionImageTag(), wellknownports.KubeAPIServerHealthCheck))
+	manifest := []byte(fmt.Sprintf(defaultKASManifest, kopsversion.KopsVersionImageTag(), wellknownports.KubeAPIServerHealthCheck))
 
 	var pod *corev1.Pod
 	var container *corev1.Container

@@ -97,6 +97,8 @@ type Config struct {
 
 	// APIServerConfig is additional configuration for nodes running an APIServer.
 	APIServerConfig *APIServerConfig `json:",omitempty"`
+	// APIFronendConfig is additional configuration for nodes running an API Frontend.
+	APIFrontendConfig *APIServerConfig `json:",omitempty"`
 	// ControlPlaneConfig is additional configuration for control-plane nodes.
 	ControlPlaneConfig *ControlPlaneConfig `json:",omitempty"`
 	// DNSZone is the DNS zone we should use when configuring DNS.
@@ -369,6 +371,14 @@ func NewConfig(cluster *kops.Cluster, instanceGroup *kops.InstanceGroup) (*Confi
 		config.APIServerConfig = &APIServerConfig{
 			ClusterDNSDomain: cluster.Spec.ClusterDNSDomain,
 			KubeAPIServer:    cluster.Spec.KubeAPIServer,
+			API: kops.APISpec{
+				PublicName:     cluster.Spec.API.PublicName,
+				AdditionalSANs: cluster.Spec.API.AdditionalSANs,
+			},
+		}
+		config.APIFrontendConfig = &APIServerConfig{
+			ClusterDNSDomain: cluster.Spec.ClusterDNSDomain,
+			KubeAPIServer:    cluster.Spec.KubeAPIFrontend,
 			API: kops.APISpec{
 				PublicName:     cluster.Spec.API.PublicName,
 				AdditionalSANs: cluster.Spec.API.AdditionalSANs,

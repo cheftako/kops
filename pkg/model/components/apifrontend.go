@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2026 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -31,23 +31,23 @@ import (
 	"github.com/blang/semver/v4"
 )
 
-// KubeAPIServerOptionsBuilder adds options for the apiserver to the model
-type KubeAPIServerOptionsBuilder struct {
+// KubeAPIFrontendOptionsBuilder adds options for the apiFrontend to the model
+type KubeAPIFrontendOptionsBuilder struct {
 	*OptionsContext
 }
 
-var _ loader.ClusterOptionsBuilder = &KubeAPIServerOptionsBuilder{}
+var _ loader.ClusterOptionsBuilder = &KubeAPIFrontendOptionsBuilder{}
 
-// BuildOptions is responsible for filling in the default settings for the kube apiserver
-func (b *KubeAPIServerOptionsBuilder) BuildOptions(cluster *kops.Cluster) error {
+// BuildOptions is responsible for filling in the default settings for the kube apiFrontend
+func (b *KubeAPIFrontendOptionsBuilder) BuildOptions(cluster *kops.Cluster) error {
 	clusterSpec := &cluster.Spec
-	if clusterSpec.KubeAPIServer == nil {
-		clusterSpec.KubeAPIServer = &kops.KubeAPIServerConfig{}
+	if clusterSpec.KubeAPIFrontend == nil {
+		clusterSpec.KubeAPIFrontend = &kops.KubeAPIServerConfig{}
 	}
-	c := clusterSpec.KubeAPIServer
+	c := clusterSpec.KubeAPIFrontend
 
 	if c.APIServerCount == nil {
-		count := b.buildAPIServerCount(clusterSpec)
+		count := b.buildAPIFrontendCount(clusterSpec)
 		if count == 0 {
 			return fmt.Errorf("no instance groups found")
 		}
@@ -81,12 +81,12 @@ func (b *KubeAPIServerOptionsBuilder) BuildOptions(cluster *kops.Cluster) error 
 	}
 
 	if clusterSpec.Authorization == nil || clusterSpec.Authorization.IsEmpty() {
-		// Do nothing - use the default as defined by the apiserver.
+		// Do nothing - use the default as defined by the apiFrontend.
 		// In practice unreachable: defaulting sets RBAC when authorization is omitted.
 	} else if clusterSpec.Authorization.AlwaysAllow != nil {
-		clusterSpec.KubeAPIServer.AuthorizationMode = new("AlwaysAllow")
+		clusterSpec.KubeAPIFrontend.AuthorizationMode = new("AlwaysAllow")
 	} else if clusterSpec.Authorization.RBAC != nil {
-		clusterSpec.KubeAPIServer.AuthorizationMode = new("Node,RBAC")
+		clusterSpec.KubeAPIFrontend.AuthorizationMode = new("Node,RBAC")
 	}
 
 	if err := b.configureAggregation(clusterSpec); err != nil {
@@ -104,7 +104,7 @@ func (b *KubeAPIServerOptionsBuilder) BuildOptions(cluster *kops.Cluster) error 
 	}
 
 	c.LogLevel = 2
-	c.SecurePort = 7443 // TODO: @jpbetz Make this dynamic. For now we are forcing the KAS Frontend which listens on 443.
+	c.SecurePort = 443
 
 	if clusterSpec.IsIPv6Only() {
 		c.BindAddress = "::"
@@ -174,8 +174,8 @@ func (b *KubeAPIServerOptionsBuilder) BuildOptions(cluster *kops.Cluster) error 
 	return nil
 }
 
-// buildAPIServerCount calculates the count of the api servers, essentially the number of node marked as Master role
-func (b *KubeAPIServerOptionsBuilder) buildAPIServerCount(clusterSpec *kops.ClusterSpec) int {
+// buildAPIFrontendCount calculates the count of the api Frontend, essentially the number of node marked as Master role
+func (b *KubeAPIFrontendOptionsBuilder) buildAPIFrontendCount(clusterSpec *kops.ClusterSpec) int {
 	// The --apiserver-count flag is (generally agreed) to be something we need to get rid of in k8s
 
 	// We should do something like this:
@@ -210,11 +210,11 @@ func (b *KubeAPIServerOptionsBuilder) buildAPIServerCount(clusterSpec *kops.Clus
 }
 
 // configureAggregation sets up the aggregation options
-func (b *KubeAPIServerOptionsBuilder) configureAggregation(clusterSpec *kops.ClusterSpec) error {
-	clusterSpec.KubeAPIServer.RequestheaderAllowedNames = []string{"aggregator"}
-	clusterSpec.KubeAPIServer.RequestheaderExtraHeaderPrefixes = []string{"X-Remote-Extra-"}
-	clusterSpec.KubeAPIServer.RequestheaderGroupHeaders = []string{"X-Remote-Group"}
-	clusterSpec.KubeAPIServer.RequestheaderUsernameHeaders = []string{"X-Remote-User"}
+func (b *KubeAPIFrontendOptionsBuilder) configureAggregation(clusterSpec *kops.ClusterSpec) error {
+	clusterSpec.KubeAPIFrontend.RequestheaderAllowedNames = []string{"aggregator"}
+	clusterSpec.KubeAPIFrontend.RequestheaderExtraHeaderPrefixes = []string{"X-Remote-Extra-"}
+	clusterSpec.KubeAPIFrontend.RequestheaderGroupHeaders = []string{"X-Remote-Group"}
+	clusterSpec.KubeAPIFrontend.RequestheaderUsernameHeaders = []string{"X-Remote-User"}
 
 	return nil
 }

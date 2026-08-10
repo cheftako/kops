@@ -1219,6 +1219,11 @@ func (in *ClusterSpec) DeepCopyInto(out *ClusterSpec) {
 		*out = new(KubeAPIServerConfig)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.KubeAPIFrontend != nil {
+		in, out := &in.KubeAPIFrontend, &out.KubeAPIFrontend
+		*out = new(KubeAPIServerConfig)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.KubeControllerManager != nil {
 		in, out := &in.KubeControllerManager, &out.KubeControllerManager
 		*out = new(KubeControllerManagerConfig)
